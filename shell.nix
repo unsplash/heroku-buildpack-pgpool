@@ -9,5 +9,10 @@ let
 in
 
 pkgs.mkShell {
-  buildInputs = with pkgs; [ go ];
+  buildInputs = with pkgs; [
+    go
+    docker
+    docker-compose
+    postgresql_13
+  ];
 }
