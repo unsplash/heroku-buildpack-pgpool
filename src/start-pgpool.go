@@ -111,13 +111,21 @@ func configurePgpoolConf() {
 		database := postgresUrl.Path[1:]
 
 		if i == 0 {
+			delayThreshold := os.Getenv("PGPOOL_DELAY_THRESHOLD")
+
+			if delayThreshold == "" {
+				delayThreshold = "0"
+			}
+
 			pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
-				sr_check_user = '%[1]s'
-				sr_check_database = '%[2]s'
-			
-				health_check_user = '%[1]s'
-				health_check_database = '%[2]s'
-			`, user, database)...)
+        sr_check_user = '%[1]s'
+        sr_check_database = '%[2]s'
+
+        health_check_user = '%[1]s'
+        health_check_database = '%[2]s'
+
+        delay_threshold = %[3]s
+      `, user, database, delayThreshold)...)
 		}
 
 		weight := os.Getenv(fmt.Sprintf("PGPOOL_BACKEND_NODE_%d_WEIGHT", i))
