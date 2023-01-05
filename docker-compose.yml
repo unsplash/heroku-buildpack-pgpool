@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  leader:
+    image: bitnami/postgresql:13.5.0
+    ports:
+      - 5433:5432
+    volumes:
+      - leader_data:/bitnami/postgresql
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=postgres
+      - POSTGRESQL_REPLICATION_PASSWORD=s3cret
+      - POSTGRESQL_PASSWORD=s3cret
+      - POSTGRESQL_DATABASE=test_db
+  follower:
+    image: bitnami/postgresql:13.5.0
+    ports:
+      - 5434:5432
+    depends_on:
+      - leader
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_REPLICATION_USER=postgres
+      - POSTGRESQL_REPLICATION_PASSWORD=s3cret
+      - POSTGRESQL_MASTER_HOST=leader
+      - POSTGRESQL_PASSWORD=s3cret
+volumes:
+  leader_data:

@@ -85,7 +85,13 @@ func configure() {
 }
 
 func configurePgpoolConf() {
-	pgpoolConf, err := os.ReadFile("/app/.apt/usr/share/pgpool2/pgpool.conf")
+	configSource := os.Getenv("PGPOOL_CONFIG_SOURCE")
+
+	if configSource == "" {
+		configSource = "/app/.apt/usr/share/pgpool2/pgpool.conf"
+	}
+
+	pgpoolConf, err := os.ReadFile(configSource)
 
 	if err != nil {
 		log.Fatal(err)
@@ -105,25 +111,52 @@ func configurePgpoolConf() {
 		database := postgresUrl.Path[1:]
 
 		if i == 0 {
+			delayThreshold := os.Getenv("PGPOOL_DELAY_THRESHOLD")
+
+			if delayThreshold == "" {
+				delayThreshold = "0"
+			}
+
 			pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
-				sr_check_user = '%[1]s'
-				sr_check_database = '%[2]s'
-			
-				health_check_user = '%[1]s'
-				health_check_database = '%[2]s'
-			`, user, database)...)
+        sr_check_user = '%[1]s'
+        sr_check_database = '%[2]s'
+
+        health_check_user = '%[1]s'
+        health_check_database = '%[2]s'
+
+        delay_threshold = %[3]s
+      `, user, database, delayThreshold)...)
+		}
+
+		weight := os.Getenv(fmt.Sprintf("PGPOOL_BACKEND_NODE_%d_WEIGHT", i))
+
+		if weight == "" {
+			weight = "1"
+		}
+
+		flag := os.Getenv(fmt.Sprintf("PGPOOL_BACKEND_NODE_%d_FLAG", i))
+
+		if flag == "" {
+			flag = "ALLOW_TO_FAILOVER"
 		}
 
 		pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
 			backend_hostname%[1]d = '%[2]s'
 			backend_port%[1]d = %[3]s
-			backend_weight%[1]d = 1
+			backend_weight%[1]d = %[4]s
 			backend_data_directory%[1]d = '/data'
-			backend_flag%[1]d = 'ALLOW_TO_FAILOVER'
-		`, i, host, port)...)
+			backend_flag%[1]d = '%[5]s'
+		`, i, host, port, weight, flag)...)
 	}
 
-	err = os.WriteFile("/app/vendor/pgpool/pgpool.conf", pgpoolConf, 0600)
+	// This is helpful to debig the file
+	configTarget := os.Getenv("PGPOOL_CONFIG_TARGET")
+
+	if configTarget == "" {
+		configTarget = "/app/vendor/pgpool/pgpool.conf"
+	}
+
+	err = os.WriteFile(configTarget, pgpoolConf, 0600)
 
 	if err != nil {
 		log.Fatal(err)
