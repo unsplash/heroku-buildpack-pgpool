@@ -124,7 +124,7 @@ func configurePgpoolConf() {
         health_check_user = '%[1]s'
         health_check_database = '%[2]s'
 
-        delay_threshold = %[3]s
+        delay_threshold_by_time = %[3]s
       `, user, database, delayThreshold)...)
 		}
 
