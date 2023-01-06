@@ -117,6 +117,12 @@ func configurePgpoolConf() {
 				delayThreshold = "0"
 			}
 
+			statementLoadBalance := os.Getenv("PGPOOL_STATEMENT_LOAD_BALANCE")
+
+			if statementLoadBalance == "" {
+				statementLoadBalance = "off"
+			}
+
 			pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
         sr_check_user = '%[1]s'
         sr_check_database = '%[2]s'
@@ -125,7 +131,8 @@ func configurePgpoolConf() {
         health_check_database = '%[2]s'
 
         delay_threshold = %[3]s
-      `, user, database, delayThreshold)...)
+        statement_level_load_balance = %[4]s
+      `, user, database, delayThreshold, statementLoadBalance)...)
 		}
 
 		weight := os.Getenv(fmt.Sprintf("PGPOOL_BACKEND_NODE_%d_WEIGHT", i))
