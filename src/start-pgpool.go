@@ -126,7 +126,7 @@ func configurePgpoolConf() {
 			pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
         backend_clustering_mode = 'streaming_replication'
 
-        load_balance_mode = on
+        load_balance_mode = 'on'
         disable_load_balance_on_write = 'transaction'
 
         sr_check_period = '30'
@@ -137,7 +137,7 @@ func configurePgpoolConf() {
         health_check_database = '%[2]s'
 
         delay_threshold = %[3]s
-        statement_level_load_balance = %[4]s
+        statement_level_load_balance = '%[4]s'
       `, user, database, delayThreshold, statementLoadBalance)...)
 		}
 
