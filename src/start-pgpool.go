@@ -111,12 +111,6 @@ func configurePgpoolConf() {
 		database := postgresUrl.Path[1:]
 
 		if i == 0 {
-			delayThreshold := os.Getenv("PGPOOL_DELAY_THRESHOLD")
-
-			if delayThreshold == "" {
-				delayThreshold = "0"
-			}
-
 			statementLoadBalance := os.Getenv("PGPOOL_STATEMENT_LOAD_BALANCE")
 
 			if statementLoadBalance == "" {
@@ -136,9 +130,8 @@ func configurePgpoolConf() {
         health_check_user = '%[1]s'
         health_check_database = '%[2]s'
 
-        delay_threshold = %[3]s
-        statement_level_load_balance = '%[4]s'
-      `, user, database, delayThreshold, statementLoadBalance)...)
+        statement_level_load_balance = '%[2]s'
+      `, user, database, statementLoadBalance)...)
 		}
 
 		weight := os.Getenv(fmt.Sprintf("PGPOOL_BACKEND_NODE_%d_WEIGHT", i))
@@ -154,10 +147,11 @@ func configurePgpoolConf() {
 		}
 
 		pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
-			backend_hostname%[1]d = '%[2]s'
-			backend_port%[1]d = %[3]s
-			backend_weight%[1]d = %[4]s
-			backend_flag%[1]d = '%[5]s'
+			backend_hostname%[1]d       = '%[2]s'
+			backend_port%[1]d           = %[3]s
+			backend_weight%[1]d         = %[4]s
+			backend_flag%[1]d           = '%[5]s'
+			backend_data_directory%[1]d = 'data%[1]d'
 		`, i, host, port, weight, flag)...)
 	}
 
