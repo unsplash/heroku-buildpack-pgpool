@@ -131,7 +131,7 @@ func configurePgpoolConf() {
         health_check_database = '%[2]s'
         health_check_period   = 0
 
-        statement_level_load_balance = '%[2]s'
+        statement_level_load_balance = '%[3]s'
       `, user, database, statementLoadBalance)...)
 		}
 
