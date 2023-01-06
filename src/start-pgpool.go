@@ -151,7 +151,6 @@ func configurePgpoolConf() {
 			backend_hostname%[1]d = '%[2]s'
 			backend_port%[1]d = %[3]s
 			backend_weight%[1]d = %[4]s
-			backend_data_directory%[1]d = '/data'
 			backend_flag%[1]d = '%[5]s'
 		`, i, host, port, weight, flag)...)
 	}
