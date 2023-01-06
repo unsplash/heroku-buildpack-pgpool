@@ -124,6 +124,8 @@ func configurePgpoolConf() {
 			}
 
 			pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
+        load_balance_mode = on
+
         sr_check_user = '%[1]s'
         sr_check_database = '%[2]s'
 
