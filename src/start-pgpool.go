@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/chonla/format"
 	"log"
 	"net"
 	"net/url"
@@ -35,7 +36,8 @@ func main() {
 	signal.Ignore(syscall.SIGINT)
 	signal.Notify(sigterm, syscall.SIGTERM)
 
-	pgpool := run(true, "/app/.apt/usr/sbin/pgpool", "-n", "-f", "/app/vendor/pgpool/pgpool.conf")
+	pgpool := run(true, "/app/.apt/usr/sbin/pgpool", "-n", "-f", "/app/vendor/pgpool/pgpool.conf", "-a", "/app/vendor/pgpool/pool_hba.conf")
+
 	defer pgpool.Process.Kill()
 	wg.Add(1)
 
@@ -85,17 +87,7 @@ func configure() {
 }
 
 func configurePgpoolConf() {
-	configSource := os.Getenv("PGPOOL_CONFIG_SOURCE")
-
-	if configSource == "" {
-		configSource = "/app/.apt/usr/share/pgpool2/pgpool.conf"
-	}
-
-	pgpoolConf, err := os.ReadFile(configSource)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	var pgpoolConf []byte
 
 	pgpoolConf = append(pgpoolConf, `
 		socket_dir = '/tmp'
@@ -117,22 +109,55 @@ func configurePgpoolConf() {
 				statementLoadBalance = "off"
 			}
 
-			pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
+			maxPool := os.Getenv("PGPOOL_MAX_POOL")
+
+			if maxPool == "" {
+				maxPool = "4"
+			}
+
+			numChildren := os.Getenv("PGPOOL_NUM_INIT_CHILDREN")
+
+			if numChildren == "" {
+				numChildren = "32"
+			}
+
+			var params = map[string]interface{}{
+				"user":         user,
+				"database":     database,
+				"load_balance": statementLoadBalance,
+				"max_pool":     maxPool,
+				"num_children": numChildren,
+			}
+
+			pgpoolConf = append(pgpoolConf, format.Sprintf(`
         backend_clustering_mode       = 'streaming_replication'
         disable_load_balance_on_write = 'transaction'
 
         load_balance_mode = 'on'
+        enable_pool_hba = 'on'
 
-        sr_check_period   = 0
-        sr_check_user     = '%[1]s'
-        sr_check_database = '%[2]s'
+        max_pool = %<max_pool>s
+        num_init_children = %<num_children>s
 
-        health_check_user     = '%[1]s'
-        health_check_database = '%[2]s'
-        health_check_period   = 0
+        sr_check_user     = '%<user>s'
+        sr_check_database = '%<database>s'
+        sr_check_period   = 30
 
-        statement_level_load_balance = '%[3]s'
-      `, user, database, statementLoadBalance)...)
+        health_check_user     = '%<user>s'
+        health_check_period   = 5
+        health_check_database = '%<database>s'
+
+        statement_level_load_balance = '%<load_balance>s'
+        allow_sql_comments = true
+      `, params)...)
+
+			if os.Getenv("PGPOOL_DEBUG") != "" {
+				pgpoolConf = append(pgpoolConf, `
+          log_destination        = 'stderr'
+          log_statement          = 'on'
+          log_per_node_statement = 'on'
+        `...)
+			}
 		}
 
 		weight := os.Getenv(fmt.Sprintf("PGPOOL_BACKEND_NODE_%d_WEIGHT", i))
@@ -147,20 +172,44 @@ func configurePgpoolConf() {
 			flag = "ALLOW_TO_FAILOVER"
 		}
 
-		pgpoolConf = append(pgpoolConf, fmt.Sprintf(`
-			backend_hostname%[1]d       = '%[2]s'
-			backend_port%[1]d           = %[3]s
-			backend_weight%[1]d         = %[4]s
-			backend_flag%[1]d           = '%[5]s'
-			backend_data_directory%[1]d = 'data%[1]d'
-		`, i, host, port, weight, flag)...)
+		var data = map[string]interface{}{
+			"index":  i,
+			"host":   host,
+			"port":   port,
+			"weight": weight,
+			"flag":   flag,
+		}
+
+		pgpoolConf = append(pgpoolConf, format.Sprintf(`
+			backend_hostname%<index>d       = '%<host>s'
+			backend_port%<index>d           = %<port>s
+			backend_weight%<index>d         = %<weight>s
+			backend_flag%<index>d           = '%<flag>s'
+			backend_data_directory%<index>d = 'data%<index>d'
+		`, data)...)
 	}
 
-	// This is helpful to debig the file
+	// This is helpful to debug the file
 	configTarget := os.Getenv("PGPOOL_CONFIG_TARGET")
+	hbaTarget := os.Getenv("PGPOOL_HBA_TARGET")
 
 	if configTarget == "" {
 		configTarget = "/app/vendor/pgpool/pgpool.conf"
+	}
+
+	if hbaTarget == "" {
+		hbaTarget = "/app/vendor/pgpool/pool_hba.conf"
+	}
+
+	hba := `
+  local   all             all                                     trust
+  host    all             all             127.0.0.1/32            trust
+  `
+
+	err := os.WriteFile(hbaTarget, []byte(hba), 0600)
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	err = os.WriteFile(configTarget, pgpoolConf, 0600)
