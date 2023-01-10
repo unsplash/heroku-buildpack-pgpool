@@ -112,7 +112,13 @@ func configurePgpoolConf() {
 			maxPool := os.Getenv("PGPOOL_MAX_POOL")
 
 			if maxPool == "" {
-				maxPool = "15"
+				maxPool = "4"
+			}
+
+			numChildren := os.Getenv("PGPOOL_NUM_INIT_CHILDREN")
+
+			if numChildren == "" {
+				numChildren = "32"
 			}
 
 			var params = map[string]interface{}{
@@ -120,6 +126,7 @@ func configurePgpoolConf() {
 				"database":     database,
 				"load_balance": statementLoadBalance,
 				"max_pool":     maxPool,
+				"num_children": numChildren,
 			}
 
 			pgpoolConf = append(pgpoolConf, format.Sprintf(`
@@ -130,6 +137,7 @@ func configurePgpoolConf() {
         enable_pool_hba = 'on'
 
         max_pool = %<max_pool>s
+        num_init_children = %<num_children>s
 
         sr_check_user     = '%<user>s'
         sr_check_database = '%<database>s'
