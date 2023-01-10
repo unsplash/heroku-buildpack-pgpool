@@ -109,24 +109,10 @@ func configurePgpoolConf() {
 				statementLoadBalance = "off"
 			}
 
-			maxPool := os.Getenv("PGPOOL_MAX_POOL")
-
-			if maxPool == "" {
-				maxPool = "4"
-			}
-
-			numChildren := os.Getenv("PGPOOL_NUM_INIT_CHILDREN")
-
-			if numChildren == "" {
-				numChildren = "32"
-			}
-
 			var params = map[string]interface{}{
 				"user":         user,
 				"database":     database,
 				"load_balance": statementLoadBalance,
-				"max_pool":     maxPool,
-				"num_children": numChildren,
 			}
 
 			pgpoolConf = append(pgpoolConf, format.Sprintf(`
@@ -134,10 +120,6 @@ func configurePgpoolConf() {
         disable_load_balance_on_write = 'transaction'
 
         load_balance_mode = 'on'
-        enable_pool_hba = 'on'
-
-        max_pool = %<max_pool>s
-        num_init_children = %<num_children>s
 
         sr_check_user     = '%<user>s'
         sr_check_database = '%<database>s'
@@ -157,6 +139,31 @@ func configurePgpoolConf() {
           log_statement          = 'on'
           log_per_node_statement = 'on'
         `...)
+			}
+
+			if os.Getenv("PGPOOL_ENABLE_POOL") != "" {
+				maxPool := os.Getenv("PGPOOL_MAX_POOL")
+
+				if maxPool == "" {
+					maxPool = "4"
+				}
+
+				numChildren := os.Getenv("PGPOOL_NUM_INIT_CHILDREN")
+
+				if numChildren == "" {
+					numChildren = "32"
+				}
+
+				var poolConfig = map[string]interface{}{
+					"max_pool":     maxPool,
+					"num_children": numChildren,
+				}
+
+				pgpoolConf = append(pgpoolConf, format.Sprintf(`
+          enable_pool_hba = 'on'
+          max_pool = %<max_pool>s
+          num_init_children = %<num_children>s
+        `, poolConfig)...)
 			}
 		}
 
