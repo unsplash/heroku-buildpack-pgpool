@@ -121,12 +121,18 @@ func configurePgpoolConf() {
 				numChildren = "32"
 			}
 
+      listenBacklogMultiplier := os.Getenv("PGPOOL_LISTEN_BACKLOG_MULTIPLIER")
+      if listenBacklogMultiplier == "" {
+        listenBacklogMultiplier = "2"
+      }
+
 			var params = map[string]interface{}{
 				"user":         user,
 				"database":     database,
 				"load_balance": statementLoadBalance,
 				"max_pool":     maxPool,
 				"num_children": numChildren,
+        "listen_backlog_multiplier": listenBacklogMultiplier,
 			}
 
 			pgpoolConf = append(pgpoolConf, format.Sprintf(`
@@ -138,6 +144,8 @@ func configurePgpoolConf() {
 
         max_pool = %<max_pool>s
         num_init_children = %<num_children>s
+
+        listen_backlog_multiplier = %<listen_backlog_multiplier>s
 
         sr_check_user     = '%<user>s'
         sr_check_database = '%<database>s'
