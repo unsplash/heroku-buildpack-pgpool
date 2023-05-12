@@ -139,6 +139,9 @@ func configurePgpoolConf() {
         max_pool = %<max_pool>s
         num_init_children = %<num_children>s
 
+        failover_on_backend_shutdown = 'off'
+        failover_on_backend_error = 'off'
+
         sr_check_user     = '%<user>s'
         sr_check_database = '%<database>s'
         sr_check_period   = 30
@@ -185,11 +188,12 @@ func configurePgpoolConf() {
 		}
 
 		pgpoolConf = append(pgpoolConf, format.Sprintf(`
-			backend_hostname%<index>d       = '%<host>s'
-			backend_port%<index>d           = %<port>s
-			backend_weight%<index>d         = %<weight>s
-			backend_flag%<index>d           = '%<flag>s'
-			backend_data_directory%<index>d = 'data%<index>d'
+			backend_hostname%<index>d         = '%<host>s'
+			backend_application_name%<index>d = 'server%<host>s'
+			backend_port%<index>d             = %<port>s
+			backend_weight%<index>d           = %<weight>s
+			backend_flag%<index>d             = '%<flag>s'
+			backend_data_directory%<index>d   = 'data%<index>d'
 		`, data)...)
 	}
 
