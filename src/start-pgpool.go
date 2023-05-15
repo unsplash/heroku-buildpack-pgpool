@@ -151,7 +151,7 @@ func configurePgpoolConf() {
 
         health_check_period      = 5
         health_check_timeout     = 30
-        health_check_max_retries = 0
+        health_check_max_retries = 9999
         health_check_retry_delay = 1
 
         statement_level_load_balance = '%<load_balance>s'
