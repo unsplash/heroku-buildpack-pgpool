@@ -288,7 +288,7 @@ func run(pgpool bool, command string, args ...string) *exec.Cmd {
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	} else {
 		cmd.Stdin = os.Stdin
-		cmd.Env = append(os.Environ(), fmt.Sprintf("DATABASE_URL=%s", databaseUrl()))
+		cmd.Env = append(os.Environ(), fmt.Sprintf("DIRECT_DATABASE_URL=%s\nDATABASE_URL=%s", os.Getenv("DATABASE_URL"), databaseUrl()))
 	}
 
 	cmd.Stdout = os.Stdout
