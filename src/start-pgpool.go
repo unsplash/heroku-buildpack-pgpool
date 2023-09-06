@@ -42,7 +42,6 @@ func main() {
 	wg.Add(1)
 
 	app := run(false, os.Args[1], os.Args[2:]...)
-	defer app.Process.Kill()
 	wg.Add(1)
 
 	go func() {
