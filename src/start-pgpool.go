@@ -17,6 +17,8 @@ import (
 )
 
 func main() {
+  log.SetOutput(os.Stdout)
+
 	if os.Getenv("PGPOOL_ENABLED") == "0" {
 		cmd, err := exec.LookPath(os.Args[1])
 
@@ -34,8 +36,7 @@ func main() {
 	var wg sync.WaitGroup
 	sigterm := make(chan os.Signal, 1)
 
-	signal.Ignore(syscall.SIGINT)
-	signal.Notify(sigterm, syscall.SIGTERM)
+	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
 
 	pgpool := run(true, "/app/.apt/usr/sbin/pgpool", "-n", "-f", "/app/vendor/pgpool/pgpool.conf", "-a", "/app/vendor/pgpool/pool_hba.conf")
 
@@ -59,6 +60,7 @@ func main() {
 		}
 
 		if pgpool.Process != nil {
+			log.Println("sending app SIGTERM")
 			pgpool.Process.Signal(syscall.SIGTERM)
 		}
 
@@ -73,6 +75,7 @@ func main() {
 		}
 
 		if app.Process != nil {
+			log.Println("sending pgpool SIGTERM")
 			app.Process.Signal(syscall.SIGTERM)
 		}
 
@@ -80,7 +83,7 @@ func main() {
 	}()
 
 	wg.Wait()
-  time.Sleep(10 * time.Second)
+  time.Sleep(5 * time.Second)
 }
 
 func configure() {
