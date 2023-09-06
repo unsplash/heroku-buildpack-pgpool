@@ -62,8 +62,10 @@ func main() {
 		if pgpool.Process != nil {
 			log.Println("sending app SIGTERM")
 			pgpool.Process.Signal(syscall.SIGTERM)
+
 		}
 
+    time.Sleep(5 * time.Second)
 		wg.Done()
 	}()
 
@@ -83,7 +85,6 @@ func main() {
 	}()
 
 	wg.Wait()
-  time.Sleep(5 * time.Second)
 }
 
 func configure() {
