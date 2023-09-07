@@ -33,8 +33,7 @@ func main() {
 	var wg sync.WaitGroup
 	sigterm := make(chan os.Signal, 1)
 
-	signal.Ignore(syscall.SIGINT)
-	signal.Notify(sigterm, syscall.SIGTERM)
+	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
 
 	pgpool := run(true, "/app/.apt/usr/sbin/pgpool", "-n", "-f", "/app/vendor/pgpool/pgpool.conf", "-a", "/app/vendor/pgpool/pool_hba.conf")
 
